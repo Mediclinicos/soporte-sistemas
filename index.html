@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soporte Sistemas | Gestión de Tickets</title>
+    <meta name="description" content="Gestión eficiente de requerimientos técnicos de hardware y software.">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Scripts -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .logo img {
+            height: 120px;
+            width: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo:hover img {
+            transform: scale(1.05);
+        }
+
+        .logo-text {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* CARD DESIGN */
+        .card {
+            background: var(--card-bg);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* NAVIGATION & BUTTONS */
+        nav {
+            display: flex;
+            gap: 1rem;
+            background: var(--card-bg);
+            padding: 0.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        nav button,
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--primary-hover));
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* FORMS */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+        }
+
+        input,
+        select,
+        textarea {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        /* BADGES */
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .bg-open {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+        }
+
+        .bg-progress {
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--warning);
+        }
+
+        .bg-waiting {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px dashed #f59e0b;
+        }
+
+        .bg-success {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+        }
+
+        .bg-closed {
+            color: var(--text-dim);
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid var(--text-dim);
+        }
+
+        /* AUTH OVERLAY */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            border: 1px solid var(--border);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            z-index: 3000;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body x-data="techDesk()">
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="Medicli.jpg" alt="Logo Soporte">
+                <span class="logo-text">Soporte Sistemas</span>
+            </div>
+            <nav x-show="!isAdmin && !isTracking">
+                <button :class="view === 'catalog' ? 'active' : ''" @click="setView('catalog')">
+                    <i data-lucide="plus-circle"></i> Nuevo Ticket
+                </button>
+                <button :class="view === 'track_search' ? 'active' : ''" @click="setView('track_search')">
+                    <i data-lucide="search"></i> Rastrear Ticket
+                </button>
+                <button class="action-btn" @click="showLogin = true">
+                    <i data-lucide="lock"></i> Admin
+                </button>
+            </nav>
+            <nav x-show="isAdmin">
+                <button :class="view === 'admin_dashboard' ? 'active' : ''" @click="setView('admin_dashboard')">
+                    <i data-lucide="layout-grid"></i> Gestión Total
+                </button>
+                <button :class="view === 'reports' ? 'active' : ''" @click="setView('reports')">
+                    <i data-lucide="bar-chart"></i> Reportes
+                </button>
+                <button class="action-btn" @click="logout()" style="color: var(--danger)">
+                    <i data-lucide="log-out"></i> Salir
+                </button>
+            </nav>
+            <nav x-show="isTracking">
+                <button class="active">
+                    <i data-lucide="user"></i> Mis Tickets: <span x-text="trackingId"></span>
+                </button>
+                <button class="action-btn" @click="logout()">
+                    <i data-lucide="arrow-left"></i> Volver
+                </button>
+            </nav>
+        </header>
+
+        <!-- SUBMIT TICKET (CLIENT) -->
+        <main x-show="view === 'catalog'" x-transition>
+            <section class="card">
+                <h2>Registrar Requerimiento</h2>
+                <p style="color: var(--text-dim); margin-bottom: 2rem;">Por favor, ingresa los datos de tu solicitud.
+                </p>
+                <form @submit.prevent="submitTicket()">
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+                        <div class="input-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" x-model="form.name" required placeholder="Juana de Arco">
+                        </div>
+                        <div class="input-group">
+                            <label>Tipo de Requerimiento</label>
+                            <select x-model="form.type" required>
+                                <option value="Software">Software / Apps</option>
+                                <option value="Hardware">Hardware / Equipos</option>
+                                <option value="Acceso">Accesos / Red</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Área / Departamento</label>
+                            <input type="text" x-model="form.area" required placeholder="Logística">
+                        </div>
+                        <div class="input-group">
+                            <label>Sede / Ubicación</label>
+                            <input type="text" x-model="form.location" required placeholder="Piso 2 - Oficina 201">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Usuario (ID Red/Nombre)</label>
+                            <input type="text" x-model="form.username" required placeholder="perezj">
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-top: 1rem;">
+                        <label>Descripción detallada</label>
+                        <textarea x-model="form.description" required placeholder="Danos más detalles..."
+                            style="min-height: 100px;"></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                        <button type="submit" class="btn-primary">
+                            <i data-lucide="send"></i> Radicar Ticket
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <!-- TRACK SEARCH (CLIENT) -->
+        <main x-show="view === 'track_search'" x-transition>
+            <section class="card" style="max-width: 500px; margin: 0 auto; text-align: center;">
+                <i data-lucide="search"
+                    style="width: 48px; height: 48px; color: var(--primary); margin-bottom: 1rem;"></i>
+                <h2>Rastrear mi Ticket</h2>
+                <p style="color: var(--text-dim); margin-bottom: 2rem;">Ingresa tu nombre de usuario para ver tus
+                    tickets.</p>
+                <div class="input-group">
+                    <input type="text" x-model="trackingInput" style="text-align: center; font-size: 1.2rem;"
+                        placeholder="perezj">
+                </div>
+                <button @click="startTracking()" class="btn-primary"
+                    style="width: 100%; justify-content: center; margin-top: 1rem;">
+                    Buscar Mis Solicitudes
+                </button>
+            </section>
+        </main>
+
+        <!-- CLIENT TRACEABILITY VIEW -->
+        <main x-show="view === 'client_traceability'" x-transition>
+            <section class="card">
+                <h2>Mis Solicitudes</h2>
+                <p style="color: var(--text-dim); margin-bottom: 2rem;">Viendo tickets registrados para: <strong
+                        x-text="trackingId"></strong></p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th># ID</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Avance / Observaciones</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="t in filteredTickets" :key="t.id">
+                                <tr>
+                                    <td style="font-family: monospace; font-weight: 700;" x-text="t.id"></td>
+                                    <td><span class="badge" x-text="t.type"></span></td>
+                                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                        x-text="t.description"></td>
+                                    <td>
+                                        <span class="badge" :class="{
+                                                 'bg-open': t.status === 'Abierto',
+                                                 'bg-progress': t.status === 'En Progreso',
+                                                 'bg-waiting': t.status === 'En Espera',
+                                                 'bg-success': t.status === 'Resuelto',
+                                                 'bg-closed': t.status === 'Cerrado Definitivo'
+                                              }" x-text="t.status"></span>
+                                    </td>
+                                    <td style="font-size: 0.85rem; color: #60a5fa;"
+                                        x-text="t.observations || 'Sin novedades aún'"></td>
+                                    <td style="font-size: 0.8rem;" x-text="new Date(t.date).toLocaleDateString()"></td>
+                                </tr>
+                            </template>
+                            <template x-if="filteredTickets.length === 0">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-dim);">
+                                        No hemos encontrado tickets con ese usuario.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- ADMIN DASHBOARD: FULL ACCESS -->
+        <main x-show="view === 'admin_dashboard' && isAdmin" x-transition>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span style="color: var(--text-dim); display: block; margin-bottom: 0.5rem;">Carga Total</span>
+                    <span style="font-size: 2rem; font-weight: 800;" x-text="tickets.length"></span>
+                </div>
+                <div class="stat-card">
+                    <span style="color: var(--danger); display: block; margin-bottom: 0.5rem;">Por Atender</span>
+                    <span style="font-size: 2rem; font-weight: 800;"
+                        x-text="tickets.filter(t => t.status === 'Abierto').length"></span>
+                </div>
+                <div class="stat-card">
+                    <span style="color: var(--warning); display: block; margin-bottom: 0.5rem;">En Gestión</span>
+                    <span style="font-size: 2rem; font-weight: 800;"
+                        x-text="tickets.filter(t => t.status === 'En Progreso').length"></span>
+                </div>
+                <div class="stat-card">
+                    <span style="color: var(--success); display: block; margin-bottom: 0.5rem;">Cerrados</span>
+                    <span style="font-size: 2rem; font-weight: 800;"
+                        x-text="tickets.filter(t => t.status === 'Resuelto').length"></span>
+                </div>
+            </div>
+
+            <section class="card">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+                    <div>
+                        <h2>Base de Datos Maestra</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-dim);">Filtra y gestiona todos los
+                            requerimientos.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" x-model="adminSearch" placeholder="Buscar por ID, Nombre o Usuario..."
+                            style="font-size: 0.85rem; min-width: 250px;">
+                        <button class="btn-outline" @click="exportCSV()">
+                            <i data-lucide="download"></i> Exportar Analítica (CSV)
+                        </button>
+                        <button class="btn-outline" @click="clearHistory()"
+                            style="border-color: var(--danger); color: var(--danger);">
+                            <i data-lucide="trash-2"></i> Limpiar Historial (Reseteo Anual)
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                    <button @click="adminFilter = 'Pendientes'" :class="adminFilter === 'Pendientes' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">⚡ Pendientes / En Gestión</button>
+                    <button @click="adminFilter = 'Abierto'" :class="adminFilter === 'Abierto' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">🆕 Abiertos</button>
+                    <button @click="adminFilter = 'En Progreso'" :class="adminFilter === 'En Progreso' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">🚀 En Gestión</button>
+                    <button @click="adminFilter = 'En Espera'" :class="adminFilter === 'En Espera' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">⏳ En Espera</button>
+                    <button @click="adminFilter = 'Resuelto'" :class="adminFilter === 'Resuelto' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">✅ Cerrados</button>
+                    <button @click="adminFilter = 'Todos'" :class="adminFilter === 'Todos' ? 'active' : ''"
+                        class="btn-outline" style="white-space: nowrap;">🔍 Todos</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Solicitante</th>
+                                <th>Solicitud / Falla</th>
+                                <th>Gestión Actual</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="t in filteredAdminTickets" :key="t.id">
+                                <tr>
+                                    <td style="font-family: monospace; font-weight: 700;" x-text="t.id"></td>
+                                    <td>
+                                        <div style="font-weight: 600;" x-text="t.name"></div>
+                                        <div style="font-size: 0.75rem; color: var(--text-dim);">
+                                            <strong x-text="t.username"></strong>
+                                        </div>
+                                        <div style="font-size: 0.7rem; color: var(--primary); margin-top: 0.2rem;"
+                                            x-text="t.location"></div>
+                                    </td>
+                                    <td style="max-width: 250px;">
+                                        <div style="font-weight: 600; font-size: 0.75rem; margin-bottom: 0.3rem;"
+                                            x-text="t.type"></div>
+                                        <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-dim);"
+                                            x-text="t.description"></div>
+                                    </td>
+                                    <td>
+                                        <textarea class="admin-notes" placeholder="Anotar avance..."
+                                            x-model="t.observations" @blur="save()"
+                                            style="width: 100%; min-height: 80px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); color: #fbbf24; padding: 0.5rem; resize: vertical;"></textarea>
+                                    </td>
+                                    <td>
+                                        <span class="badge" :class="{
+                                                 'bg-open': t.status === 'Abierto',
+                                                 'bg-progress': t.status === 'En Progreso',
+                                                 'bg-waiting': t.status === 'En Espera',
+                                                 'bg-success': t.status === 'Resuelto',
+                                                 'bg-closed': t.status === 'Cerrado Definitivo'
+                                              }" x-text="t.status"></span>
+                                    </td>
+                                    <td>
+                                        <div
+                                            style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 140px;">
+                                            <button @click="updateStatus(t.id, 'En Progreso')" class="btn-outline"
+                                                style="font-size: 0.75rem; padding: 0.4rem;">🚀 En Gestión</button>
+                                            <button @click="updateStatus(t.id, 'En Espera')" class="btn-outline"
+                                                style="font-size: 0.75rem; padding: 0.4rem; border-color: var(--warning); color: var(--warning);">⏳
+                                                En Espera</button>
+                                            <button @click="updateStatus(t.id, 'Resuelto')" class="btn-outline"
+                                                style="font-size: 0.8rem; padding: 0.5rem; border-color: var(--success); background: rgba(16, 185, 129, 0.1); color: var(--success); font-weight: 700;">✅
+                                                CERRAR TICKET</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- ADMIN REPORTS -->
+        <main x-show="view === 'reports' && isAdmin" x-transition>
+            <section class="card">
+                <h2>Indicadores de Gestión (KPIs)</h2>
+                <div style="height: 400px; margin-top: 2rem;">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </section>
+        </main>
+
+        <!-- ADMIN LOGIN OVERLAY -->
+        <div class="overlay" x-show="showLogin" x-transition>
+            <div class="card" style="width: 350px; text-align: center;">
+                <i data-lucide="shield-check"
+                    style="width: 48px; height: 48px; color: var(--primary); margin: 0 auto 1.5rem;"></i>
+                <h3>Acceso Restringido</h3>
+                <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem;">Ingresa el código de
+                    administrador para continuar.</p>
+                <div class="input-group">
+                    <input type="password" x-model="loginCode" placeholder="Código de acceso"
+                        style="text-align: center;" @keyup.enter="login()">
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                    <button class="btn-outline" @click="showLogin = false" style="flex: 1;">Cancelar</button>
+                    <button @click="login()" class="btn-primary"
+                        style="flex: 2; justify-content: center;">Entrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION -->
+    <div class="toast" x-show="showToast" x-transition>
+        <span x-text="toastMsg"></span>
+    </div>
+
+    <script>
+        function techDesk() {
+            return {
+                view: 'catalog',
+                tickets: JSON.parse(localStorage.getItem('techdesk_data') || '[]'),
+                isAdmin: false,
+                isTracking: false,
+                trackingId: '',
+                trackingInput: '',
+                showLogin: false,
+                loginCode: '',
+                showToast: false,
+                toastMsg: '',
+                chart: null,
+                form: { name: '', type: 'Software', area: '', location: '', username: '', description: '' },
+                adminFilter: 'Pendientes',
+                adminSearch: '',
+                supabase: null,
+                useSupabase: false,
+
+                async init() {
+                    lucide.createIcons();
+
+                    // --- CONFIGURACIÓN SUPABASE ---
+                    // REEMPLAZA ESTOS DATOS CON LOS QUE COPIES DE LA SECCIÓN "API" EN SETTINGS
+                    const SB_URL = 'https://PEGA_AQUÍ_LA_URL_QUE_TERMINA_EN_.CO';
+                    const SB_KEY = 'PEGA_AQUÍ_TU_LLAVE_ANON_PUBLIC';
+
+                    if (SB_URL.includes('.supabase.co')) {
+                        this.supabase = supabase.createClient(SB_URL, SB_KEY);
+                        this.useSupabase = true;
+                        await this.loadFromCloud();
+                    } else {
+                        console.warn("Supabase no configurado. Usando almacenamiento local.");
+                    }
+                },
+
+                async loadFromCloud() {
+                    if (!this.useSupabase) return;
+                    const { data, error } = await this.supabase
+                        .from('tickets')
+                        .select('*')
+                        .order('date', { ascending: false });
+
+                    if (data) {
+                        this.tickets = data;
+                    }
+                },
+
+                setView(v) {
+                    this.view = v;
+                    if (v === 'reports') {
+                        this.$nextTick(() => this.renderChart());
+                    }
+                    setTimeout(() => lucide.createIcons(), 50);
+                },
+
+                login() {
+                    // CÓDIGO POR DEFECTO: 1234 (El usuario puede cambiarlo aquí)
+                    if (this.loginCode === '1234') {
+                        this.isAdmin = true;
+                        this.isTracking = false;
+                        this.showLogin = false;
+                        this.loginCode = '';
+                        this.setView('admin_dashboard');
+                        this.notify('Bienvenido, Administrador');
+                    } else {
+                        alert('Código incorrecto');
+                    }
+                },
+
+                logout() {
+                    this.isAdmin = false;
+                    this.isTracking = false;
+                    this.trackingId = '';
+                    this.setView('catalog');
+                },
+
+                startTracking() {
+                    if (!this.trackingInput) return alert('Ingresa tu usuario');
+                    this.isTracking = true;
+                    this.trackingId = this.trackingInput;
+                    this.setView('client_traceability');
+                },
+
+                get filteredTickets() {
+                    const search = this.trackingInput.toLowerCase();
+                    if (!search) return [];
+                    return this.tickets.filter(t =>
+                        (t.username && t.username.toLowerCase() === search)
+                    );
+                },
+
+                get filteredAdminTickets() {
+                    let list = this.tickets;
+
+                    // Search Filter
+                    if (this.adminSearch) {
+                        const s = this.adminSearch.toLowerCase();
+                        list = list.filter(t =>
+                            t.id.toLowerCase().includes(s) ||
+                            t.name.toLowerCase().includes(s) ||
+                            t.username.toLowerCase().includes(s)
+                        );
+                    }
+
+                    // Status Filter
+                    if (this.adminFilter === 'Pendientes') {
+                        list = list.filter(t => t.status === 'Abierto' || t.status === 'En Progreso' || t.status === 'En Espera');
+                    } else if (this.adminFilter !== 'Todos') {
+                        list = list.filter(t => t.status === this.adminFilter);
+                    }
+
+                    return list;
+                },
+
+                async submitTicket() {
+                    const id = 'TK-' + Math.floor(1000 + Math.random() * 9000);
+                    const now = new Date().toISOString();
+                    const newTicket = {
+                        ...this.form,
+                        id: id,
+                        status: 'Abierto',
+                        date: now,
+                        observations: '',
+                        history: [{ status: 'Abierto', date: now }]
+                    };
+
+                    if (this.useSupabase) {
+                        const { error } = await this.supabase.from('tickets').insert([newTicket]);
+                        if (error) return alert("Error al subir a la nube: " + error.message);
+                    }
+
+                    this.tickets.unshift(newTicket);
+                    this.save();
+                    this.notify('Ticket ' + id + ' creado con éxito. ¡Guarda tu ID!');
+                    this.form = { name: '', type: 'Software', area: '', location: '', username: '', description: '' };
+                },
+
+                async updateStatus(id, newStatus) {
+                    const idx = this.tickets.findIndex(t => t.id === id);
+                    if (idx !== -1) {
+                        const now = new Date().toISOString();
+
+                        // Asegurar que exista el historial
+                        if (!this.tickets[idx].history) {
+                            this.tickets[idx].history = [{ status: 'Abierto', date: this.tickets[idx].date }];
+                        }
+                        const newHistory = [...this.tickets[idx].history, { status: newStatus, date: now }];
+
+                        if (this.useSupabase) {
+                            const { error } = await this.supabase
+                                .from('tickets')
+                                .update({ status: newStatus, history: newHistory })
+                                .eq('id', id);
+                            if (error) return alert("Error al actualizar nube: " + error.message);
+                        }
+
+                        this.tickets[idx].status = newStatus;
+                        this.tickets[idx].history = newHistory;
+                        this.save();
+                        this.notify('Estado actualizado a: ' + newStatus);
+                    }
+                },
+
+                save() {
+                    localStorage.setItem('techdesk_data', JSON.stringify(this.tickets));
+                },
+
+                notify(msg) {
+                    this.toastMsg = msg;
+                    this.showToast = true;
+                    setTimeout(() => (this.showToast = false), 3500);
+                },
+
+                formatTime(ms) {
+                    if (isNaN(ms) || ms < 0) return "N/A";
+                    const minutes = Math.floor(ms / 60000);
+                    const hours = Math.floor(minutes / 60);
+                    const days = Math.floor(hours / 24);
+                    if (days > 0) return `${days}d ${hours % 24}h`;
+                    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+                    return `${minutes}m`;
+                },
+
+                exportCSV() {
+                    let csv = "ID,Nombre,Usuario,Tipo,Falla,Gestion/Solucion,Estado,Creado,Ultimo Cambio,Tiempo Espera (min),Tiempo Total Resolucion (min),Trazabilidad Completa\n";
+
+                    this.tickets.forEach(t => {
+                        const createdDate = new Date(t.date);
+                        const lastChangeDate = t.history ? new Date(t.history[t.history.length - 1].date) : createdDate;
+
+                        // Tiempo de espera (primera gestión)
+                        let waitTime = "N/A";
+                        if (t.history && t.history.length > 1) {
+                            waitTime = Math.round((new Date(t.history[1].date) - createdDate) / 60000);
+                        }
+
+                        // Tiempo total resolución
+                        let resolutionTime = "N/A";
+                        const resIndex = t.history ? t.history.findIndex(h => h.status === 'Resuelto') : -1;
+                        if (resIndex !== -1) {
+                            resolutionTime = Math.round((new Date(t.history[resIndex].date) - createdDate) / 60000);
+                        }
+
+                        // Trazabilidad detallada
+                        let trazabilidad = t.history ? t.history.map(h => `${h.status} (${new Date(h.date).toLocaleString()})`).join(' | ') : "";
+
+                        csv += `"${t.id}","${t.name}","${t.username}","${t.type}","${t.description.replace(/"/g, '""')}","${(t.observations || '').replace(/"/g, '""')}","${t.status}","${createdDate.toLocaleString()}","${lastChangeDate.toLocaleString()}","${waitTime}","${resolutionTime}","${trazabilidad}"\n`;
+                    });
+                    const blob = new Blob(["\uFEFF", csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.setAttribute('href', url);
+                    a.setAttribute('download', `Analitica_Soporte_${new Date().toLocaleDateString()}.csv`);
+                    a.click();
+                },
+
+                renderChart() {
+                    const ctx = document.getElementById('mainChart').getContext('2d');
+                    if (this.chart) this.chart.destroy();
+
+                    const counts = { 'Software': 0, 'Hardware': 0, 'Acceso': 0 };
+                    this.tickets.forEach(t => counts[t.type]++);
+
+                    this.chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(counts),
+                            datasets: [{
+                                data: Object.values(counts),
+                                backgroundColor: ['#6366f1', '#ec4899', '#f59e0b'],
+                                hoverOffset: 20
+                            }]
+                        },
+                        options: {
+                            animation: { animateScale: true },
+                            plugins: { legend: { labels: { color: '#f8fafc', font: { size: 14 } } } }
+                        }
+                    });
+                },
+
+                async clearHistory() {
+                    if (confirm("🚨 ¡ATENCIÓN! Estás a punto de borrar TODOS los tickets del sistema. Esta acción es irreversible.\n\n¿Quieres proceder con la limpieza anual?")) {
+                        if (this.useSupabase) {
+                            const { error } = await this.supabase.from('tickets').delete().neq('id', '0');
+                            if (error) return alert("Error al borrar en la nube.");
+                        }
+                        this.tickets = [];
+                        this.save();
+                        this.notify("Base de datos limpiada correctamente.");
+                        if (this.chart) this.chart.destroy();
+                        this.setView('admin_dashboard');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
