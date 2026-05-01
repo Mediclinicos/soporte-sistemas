@@ -415,7 +415,7 @@
                     tickets.</p>
                 <div class="input-group">
                     <input type="text" x-model="trackingInput" style="text-align: center; font-size: 1.2rem;"
-                        placeholder="perezj">
+                        placeholder="perezj" @keyup.enter="startTracking()">
                 </div>
                 <button @click="startTracking()" class="btn-primary"
                     style="width: 100%; justify-content: center; margin-top: 1rem;">
@@ -944,10 +944,11 @@
                             resolutionTime = Math.round((new Date(t.history[resIndex].date) - createdDate) / 60000);
                         }
 
-                        // Trazabilidad detallada
-                        let trazabilidad = t.history ? t.history.map(h => `${h.status} (${new Date(h.date).toLocaleString()})`).join(' | ') : "";
+                        // Trazabilidad y Gestión detallada
+                        let gestionSolucion = t.history ? t.history.filter(h => h.comment).map(h => h.comment).join(' | ') : "";
+                        let trazabilidad = t.history ? t.history.map(h => `${h.status}${h.comment ? ': ' + h.comment : ''} (${new Date(h.date).toLocaleString()})`).join(' || ') : "";
 
-                        csv += `"${t.id}","${t.name}","${t.username}","${t.type}","${t.description.replace(/"/g, '""')}","${(t.observations || '').replace(/"/g, '""')}","${t.status}","${createdDate.toLocaleString()}","${lastChangeDate.toLocaleString()}","${waitTime}","${resolutionTime}","${trazabilidad}"\n`;
+                        csv += `"${t.id}","${t.name}","${t.username}","${t.type}","${t.description.replace(/"/g, '""')}","${gestionSolucion.replace(/"/g, '""')}","${t.status}","${createdDate.toLocaleString()}","${lastChangeDate.toLocaleString()}","${waitTime}","${resolutionTime}","${trazabilidad.replace(/"/g, '""')}"\n`;
                     });
                     const blob = new Blob(["\uFEFF", csv], { type: 'text/csv;charset=utf-8;' });
                     const url = window.URL.createObjectURL(blob);
