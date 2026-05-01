@@ -458,8 +458,21 @@
                                                  'bg-closed': t.status === 'Cerrado Definitivo'
                                               }" x-text="t.status"></span>
                                     </td>
-                                    <td style="font-size: 0.85rem; color: #60a5fa;"
-                                        x-text="t.observations || 'Sin novedades aún'"></td>
+                                    <td>
+                                        <div style="font-size: 0.85rem; color: #fbbf24; margin-bottom: 0.5rem; font-weight: 600;">
+                                            <i data-lucide="message-square" style="width:12px; vertical-align:middle"></i> 
+                                            <span x-text="t.observations || 'Sin observaciones aún'"></span>
+                                        </div>
+                                        <div style="font-size: 0.7rem; color: var(--text-dim); border-left: 2px solid var(--primary); padding-left: 8px;">
+                                            <template x-for="h in t.history" :key="h.date">
+                                                <div style="margin-bottom: 4px;">
+                                                    <strong x-text="h.status"></strong> 
+                                                    <span style="font-size: 0.6rem; opacity: 0.6;" x-text="new Date(h.date).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})"></span>
+                                                    <div x-show="h.comment" style="font-style: italic; color: #60a5fa;" x-text="'» ' + h.comment"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </td>
                                     <td style="font-size: 0.8rem;" x-text="new Date(t.date).toLocaleDateString()"></td>
                                 </tr>
                             </template>
@@ -566,9 +579,24 @@
                                             x-text="t.description"></div>
                                     </td>
                                     <td>
-                                        <textarea class="admin-notes" placeholder="Anotar avance..."
-                                            x-model="t.observations" @blur="save()"
-                                            style="width: 100%; min-height: 80px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); color: #fbbf24; padding: 0.5rem; resize: vertical;"></textarea>
+                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                            <textarea class="admin-notes" placeholder="Escribe aquí los avances generales..."
+                                                x-model="t.observations"
+                                                style="width: 100%; min-height: 80px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); color: #fbbf24; padding: 0.5rem; resize: vertical;"></textarea>
+                                            <button @click="updateObservations(t)" class="btn-outline" style="font-size: 0.7rem; padding: 2px 8px; align-self: flex-end; background: var(--primary); color: white;">
+                                                <i data-lucide="save" style="width:12px; vertical-align:middle"></i> Guardar Avances
+                                            </button>
+                                            <div style="font-size: 0.65rem; color: var(--text-dim); max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                                <strong style="display:block; margin-bottom:4px; color: var(--text-dim);">Bitácora de Cambios:</strong>
+                                                <template x-for="h in t.history" :key="h.date">
+                                                    <div style="margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 3px;">
+                                                        <span style="color: var(--primary); font-weight: 700;" x-text="h.status"></span>
+                                                        <span style="opacity:0.5" x-text="new Date(h.date).toLocaleDateString()"></span>
+                                                        <div x-show="h.comment" style="color: #60a5fa; font-style: italic; font-size: 0.6rem;" x-text="h.comment"></div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="badge" :class="{
@@ -753,7 +781,18 @@
                 },
 
                 async submitTicket() {
-                    const id = 'TK-' + Math.floor(1000 + Math.random() * 9000);
+                    // Generar ID consecutivo
+                    let nextNumber = 1001;
+                    if (this.tickets.length > 0) {
+                        const numericIds = this.tickets
+                            .map(t => parseInt(t.id.replace('TK-', '')))
+                            .filter(n => !isNaN(n));
+                        if (numericIds.length > 0) {
+                            nextNumber = Math.max(...numericIds) + 1;
+                        }
+                    }
+                    
+                    const id = 'TK-' + nextNumber;
                     const now = new Date().toISOString();
                     const newTicket = {
                         ...this.form,
@@ -761,12 +800,18 @@
                         status: 'Abierto',
                         date: now,
                         observations: '',
-                        history: [{ status: 'Abierto', date: now }]
+                        history: [{ status: 'Abierto', date: now, comment: 'Ticket radicado por el usuario' }]
                     };
 
                     if (this.useSupabase) {
                         const { error } = await this.supabase.from('tickets').insert([newTicket]);
-                        if (error) return alert("Error al subir a la nube: " + error.message);
+                        if (error) {
+                            if (error.code === '23505') { // Error de duplicado en Supabase
+                                // Reintentar con el siguiente número en caso de colisión
+                                return this.submitTicket(); 
+                            }
+                            return alert("Error al subir a la nube: " + error.message);
+                        }
                     }
 
                     this.tickets.unshift(newTicket);
@@ -778,13 +823,14 @@
                 async updateStatus(id, newStatus) {
                     const idx = this.tickets.findIndex(t => t.id === id);
                     if (idx !== -1) {
+                        const comment = prompt(`Comentario para el estado "${newStatus}" (Opcional):`) || '';
                         const now = new Date().toISOString();
 
                         // Asegurar que exista el historial
                         if (!this.tickets[idx].history) {
-                            this.tickets[idx].history = [{ status: 'Abierto', date: this.tickets[idx].date }];
+                            this.tickets[idx].history = [{ status: 'Abierto', date: this.tickets[idx].date, comment: 'Registro inicial' }];
                         }
-                        const newHistory = [...this.tickets[idx].history, { status: newStatus, date: now }];
+                        const newHistory = [...this.tickets[idx].history, { status: newStatus, date: now, comment: comment }];
 
                         if (this.useSupabase) {
                             const { error } = await this.supabase
@@ -803,6 +849,23 @@
 
                 save() {
                     localStorage.setItem('techdesk_data', JSON.stringify(this.tickets));
+                },
+
+                async updateObservations(ticket) {
+                    this.save();
+                    if (this.useSupabase) {
+                        const { error } = await this.supabase
+                            .from('tickets')
+                            .update({ observations: ticket.observations })
+                            .eq('id', ticket.id);
+                        
+                        if (error) {
+                            console.error("Error al actualizar observaciones:", error);
+                            this.notify('Error al sincronizar con la nube');
+                        } else {
+                            this.notify('Observaciones guardadas');
+                        }
+                    }
                 },
 
                 notify(msg) {
