@@ -49,7 +49,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
         }
@@ -459,17 +459,24 @@
                                               }" x-text="t.status"></span>
                                     </td>
                                     <td>
-                                        <div style="font-size: 0.85rem; color: #fbbf24; margin-bottom: 0.5rem; font-weight: 600;">
-                                            <i data-lucide="message-square" style="width:12px; vertical-align:middle"></i> 
-                                            <span x-text="t.observations || 'Sin observaciones aún'"></span>
-                                        </div>
-                                        <div style="font-size: 0.7rem; color: var(--text-dim); border-left: 2px solid var(--primary); padding-left: 8px;">
-                                            <template x-for="h in t.history" :key="h.date">
-                                                <div style="margin-bottom: 4px;">
-                                                    <strong x-text="h.status"></strong> 
-                                                    <span style="font-size: 0.6rem; opacity: 0.6;" x-text="new Date(h.date).toLocaleString([], {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})"></span>
-                                                    <div x-show="h.comment" style="font-style: italic; color: #60a5fa;" x-text="'» ' + h.comment"></div>
+                                        <div style="font-size: 0.8rem; color: var(--text-dim); max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                            <template x-for="h in (t.history || []).slice().reverse()" :key="h.date">
+                                                <div style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                                        <span class="badge" :class="{
+                                                            'bg-open': h.status === 'Abierto',
+                                                            'bg-progress': h.status === 'En Progreso',
+                                                            'bg-waiting': h.status === 'En Espera',
+                                                            'bg-success': h.status === 'Resuelto',
+                                                            'bg-closed': h.status === 'Cerrado Definitivo'
+                                                        }" style="font-size: 0.55rem; padding: 1px 3px;" x-text="h.status"></span>
+                                                        <span style="opacity:0.6; font-size: 0.65rem;" x-text="new Date(h.date).toLocaleDateString() + ' ' + new Date(h.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                                                    </div>
+                                                    <div x-show="h.comment" style="color: #fbbf24; line-height: 1.3; font-size: 0.75rem;" x-text="h.comment"></div>
                                                 </div>
+                                            </template>
+                                            <template x-if="!t.history || t.history.length === 0">
+                                                <span style="font-size: 0.75rem; opacity: 0.5;">Sin avances registrados</span>
                                             </template>
                                         </div>
                                     </td>
@@ -552,12 +559,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Ticket</th>
-                                <th>Solicitante</th>
-                                <th>Solicitud / Falla</th>
-                                <th>Gestión Actual</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th style="width: 100px;">Ticket</th>
+                                <th style="width: 200px;">Solicitante</th>
+                                <th style="width: 300px;">Solicitud / Falla</th>
+                                <th>Gestión Actual (Bitácora)</th>
+                                <th style="width: 150px;">Estado</th>
+                                <th style="width: 180px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -580,19 +587,27 @@
                                     </td>
                                     <td>
                                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                            <textarea class="admin-notes" placeholder="Escribe aquí los avances generales..."
+                                            <textarea class="admin-notes" placeholder="Escribir nueva observación aquí..."
                                                 x-model="t.observations"
-                                                style="width: 100%; min-height: 80px; font-size: 0.8rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border); color: #fbbf24; padding: 0.5rem; resize: vertical;"></textarea>
-                                            <button @click="updateObservations(t)" class="btn-outline" style="font-size: 0.7rem; padding: 2px 8px; align-self: flex-end; background: var(--primary); color: white;">
-                                                <i data-lucide="save" style="width:12px; vertical-align:middle"></i> Guardar Avances
+                                                style="width: 100%; min-height: 100px; font-size: 0.9rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--primary); color: #fbbf24; padding: 0.7rem; resize: vertical;"></textarea>
+                                            <button @click="updateObservations(t)" class="btn-primary" style="font-size: 0.8rem; padding: 0.5rem 1rem; align-self: flex-end;">
+                                                <i data-lucide="save" style="width:16px; vertical-align:middle"></i> Registrar Avance
                                             </button>
-                                            <div style="font-size: 0.65rem; color: var(--text-dim); max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                                                <strong style="display:block; margin-bottom:4px; color: var(--text-dim);">Bitácora de Cambios:</strong>
-                                                <template x-for="h in t.history" :key="h.date">
-                                                    <div style="margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 3px;">
-                                                        <span style="color: var(--primary); font-weight: 700;" x-text="h.status"></span>
-                                                        <span style="opacity:0.5" x-text="new Date(h.date).toLocaleDateString()"></span>
-                                                        <div x-show="h.comment" style="color: #60a5fa; font-style: italic; font-size: 0.6rem;" x-text="h.comment"></div>
+                                            <div style="font-size: 0.8rem; color: var(--text-dim); max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                                                <strong style="display:block; margin-bottom:8px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px;">Historial de Seguimiento:</strong>
+                                                <template x-for="h in t.history.slice().reverse()" :key="h.date">
+                                                    <div style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+                                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                                            <span class="badge" :class="{
+                                                                'bg-open': h.status === 'Abierto',
+                                                                'bg-progress': h.status === 'En Progreso',
+                                                                'bg-waiting': h.status === 'En Espera',
+                                                                'bg-success': h.status === 'Resuelto',
+                                                                'bg-closed': h.status === 'Cerrado Definitivo'
+                                                            }" style="font-size: 0.6rem; padding: 1px 4px;" x-text="h.status"></span>
+                                                            <span style="opacity:0.6; font-size: 0.7rem;" x-text="new Date(h.date).toLocaleString()"></span>
+                                                        </div>
+                                                        <div x-show="h.comment" style="color: #60a5fa; line-height: 1.4;" x-text="h.comment"></div>
                                                     </div>
                                                 </template>
                                             </div>
@@ -823,7 +838,7 @@
                 async updateStatus(id, newStatus) {
                     const idx = this.tickets.findIndex(t => t.id === id);
                     if (idx !== -1) {
-                        const comment = prompt(`Comentario para el estado "${newStatus}" (Opcional):`) || '';
+                        const comment = ''; // Se eliminó el prompt opcional
                         const now = new Date().toISOString();
 
                         // Asegurar que exista el historial
@@ -852,20 +867,45 @@
                 },
 
                 async updateObservations(ticket) {
+                    if (!ticket.observations || ticket.observations.trim() === '') {
+                        return this.notify('Escribe una observación antes de guardar');
+                    }
+
+                    const now = new Date().toISOString();
+                    const newEntry = {
+                        status: ticket.status,
+                        date: now,
+                        comment: ticket.observations
+                    };
+
+                    if (!ticket.history) ticket.history = [];
+                    ticket.history.push(newEntry);
+                    
+                    // Guardar y Sincronizar
+                    const obsToSave = ticket.observations; // backup if needed
+                    ticket.observations = ''; // Limpiar campo para nueva entrada
+                    
                     this.save();
+                    
                     if (this.useSupabase) {
                         const { error } = await this.supabase
                             .from('tickets')
-                            .update({ observations: ticket.observations })
+                            .update({ 
+                                observations: '', 
+                                history: ticket.history 
+                            })
                             .eq('id', ticket.id);
                         
                         if (error) {
                             console.error("Error al actualizar observaciones:", error);
                             this.notify('Error al sincronizar con la nube');
                         } else {
-                            this.notify('Observaciones guardadas');
+                            this.notify('Seguimiento registrado con éxito');
                         }
+                    } else {
+                        this.notify('Seguimiento guardado localmente');
                     }
+                    setTimeout(() => lucide.createIcons(), 50);
                 },
 
                 notify(msg) {
