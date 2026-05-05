@@ -572,12 +572,12 @@
                                 <tr>
                                     <td style="font-family: monospace; font-weight: 700;" x-text="t.id"></td>
                                     <td>
-                                        <div style="font-weight: 600;" x-text="t.name"></div>
+                                        <div style="font-weight: 600;" x-text="t.name || 'Sin Nombre'"></div>
                                         <div style="font-size: 0.75rem; color: var(--text-dim);">
-                                            <strong x-text="t.username"></strong>
+                                            <strong x-text="t.username || 'N/A'"></strong>
                                         </div>
                                         <div style="font-size: 0.7rem; color: var(--primary); margin-top: 0.2rem;"
-                                            x-text="t.location"></div>
+                                            x-text="t.location || 'Ubicación no especificada'"></div>
                                     </td>
                                     <td style="max-width: 250px;">
                                         <div style="font-weight: 600; font-size: 0.75rem; margin-bottom: 0.3rem;"
@@ -765,10 +765,11 @@
                 },
 
                 get filteredTickets() {
-                    const search = this.trackingInput.toLowerCase();
+                    const search = this.trackingInput.trim().toLowerCase();
                     if (!search) return [];
                     return this.tickets.filter(t =>
-                        (t.username && t.username.toLowerCase() === search)
+                        (t.username && t.username.trim().toLowerCase() === search) ||
+                        (t.name && t.name.trim().toLowerCase() === search)
                     );
                 },
 
@@ -779,9 +780,10 @@
                     if (this.adminSearch) {
                         const s = this.adminSearch.toLowerCase();
                         list = list.filter(t =>
-                            t.id.toLowerCase().includes(s) ||
-                            t.name.toLowerCase().includes(s) ||
-                            t.username.toLowerCase().includes(s)
+                            (t.id && t.id.toLowerCase().includes(s)) ||
+                            (t.name && t.name.toLowerCase().includes(s)) ||
+                            (t.username && t.username.toLowerCase().includes(s)) ||
+                            (t.location && t.location.toLowerCase().includes(s))
                         );
                     }
 
@@ -807,8 +809,13 @@
                         }
                     }
                     
-                    const id = 'TK-' + nextNumber;
+                    // Limpiar espacios en blanco
+                    this.form.username = this.form.username.trim();
+                    this.form.name = this.form.name.trim();
+                    
                     const now = new Date().toISOString();
+                    const id = 'TK-' + nextNumber;
+
                     const newTicket = {
                         ...this.form,
                         id: id,
