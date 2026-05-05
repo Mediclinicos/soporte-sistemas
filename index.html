@@ -434,12 +434,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th># ID</th>
-                                <th>Tipo</th>
-                                <th>Descripción</th>
-                                <th>Estado</th>
+                                <th style="width: 100px;"># ID</th>
+                                <th style="width: 120px;">Tipo</th>
+                                <th style="width: 350px;">Descripción</th>
+                                <th style="width: 150px;">Estado</th>
                                 <th>Avance / Observaciones</th>
-                                <th>Fecha</th>
+                                <th style="width: 120px;">Fecha</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -447,8 +447,9 @@
                                 <tr>
                                     <td style="font-family: monospace; font-weight: 700;" x-text="t.id"></td>
                                     <td><span class="badge" x-text="t.type"></span></td>
-                                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                        x-text="t.description"></td>
+                                    <td style="max-width: 350px;">
+                                        <div style="font-size: 0.9rem; line-height: 1.5; color: var(--text-dim); white-space: pre-wrap; word-break: break-word;" x-text="t.description"></div>
+                                    </td>
                                     <td>
                                         <span class="badge" :class="{
                                                  'bg-open': t.status === 'Abierto',
@@ -472,7 +473,7 @@
                                                         }" style="font-size: 0.55rem; padding: 1px 3px;" x-text="h.status"></span>
                                                         <span style="opacity:0.6; font-size: 0.65rem;" x-text="new Date(h.date).toLocaleDateString() + ' ' + new Date(h.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
                                                     </div>
-                                                    <div x-show="h.comment" style="color: #fbbf24; line-height: 1.3; font-size: 0.75rem;" x-text="h.comment"></div>
+                                                    <div x-show="h.comment" style="color: #fbbf24; line-height: 1.3; font-size: 0.75rem; white-space: pre-wrap; word-break: break-word;" x-text="h.comment"></div>
                                                 </div>
                                             </template>
                                             <template x-if="!t.history || t.history.length === 0">
@@ -579,10 +580,10 @@
                                         <div style="font-size: 0.7rem; color: var(--primary); margin-top: 0.2rem;"
                                             x-text="t.location || 'Ubicación no especificada'"></div>
                                     </td>
-                                    <td style="max-width: 250px;">
+                                    <td style="max-width: 300px;">
                                         <div style="font-weight: 600; font-size: 0.75rem; margin-bottom: 0.3rem;"
                                             x-text="t.type"></div>
-                                        <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-dim);"
+                                        <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-dim); white-space: pre-wrap; word-break: break-word;"
                                             x-text="t.description"></div>
                                     </td>
                                     <td>
@@ -607,7 +608,7 @@
                                                             }" style="font-size: 0.6rem; padding: 1px 4px;" x-text="h.status"></span>
                                                             <span style="opacity:0.6; font-size: 0.7rem;" x-text="new Date(h.date).toLocaleString()"></span>
                                                         </div>
-                                                        <div x-show="h.comment" style="color: #60a5fa; line-height: 1.4;" x-text="h.comment"></div>
+                                                        <div x-show="h.comment" style="color: #60a5fa; line-height: 1.4; white-space: pre-wrap; word-break: break-word;" x-text="h.comment"></div>
                                                     </div>
                                                 </template>
                                             </div>
