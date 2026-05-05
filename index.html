@@ -799,23 +799,32 @@
                 },
 
                 async submitTicket() {
+                    // Si usamos Supabase, refrescamos primero para evitar colisiones de ID
+                    if (this.useSupabase) {
+                        await this.loadFromCloud();
+                    }
+
                     // Generar ID consecutivo
-                    let nextNumber = 1001;
+                    let nextNumber = 1;
                     if (this.tickets.length > 0) {
                         const numericIds = this.tickets
-                            .map(t => parseInt(t.id.replace('TK-', '')))
+                            .map(t => {
+                                const parts = t.id.split('-');
+                                return parts.length > 1 ? parseInt(parts[1]) : 0;
+                            })
                             .filter(n => !isNaN(n));
                         if (numericIds.length > 0) {
                             nextNumber = Math.max(...numericIds) + 1;
                         }
                     }
                     
+                    const id = 'TK-' + String(nextNumber).padStart(4, '0');
+                    
                     // Limpiar espacios en blanco
                     this.form.username = this.form.username.trim();
                     this.form.name = this.form.name.trim();
                     
                     const now = new Date().toISOString();
-                    const id = 'TK-' + nextNumber;
 
                     const newTicket = {
                         ...this.form,
